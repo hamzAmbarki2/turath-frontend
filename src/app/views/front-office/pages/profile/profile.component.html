@@ -1,0 +1,790 @@
+<!-- Front Office Profile Component -->
+<div class="container py-5">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-3">Loading your profile...</p>
+  </div>
+
+  <!-- Profile Content -->
+  <div *ngIf="!isLoading && currentUser" class="row" [@fadeIn]="'in'">
+    <!-- Profile Sidebar -->
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <!-- Profile Header -->
+        <div class="card-header bg-primary text-white text-center py-4 position-relative">
+          <div class="position-relative d-inline-block">
+            <img [src]="getProfileImage()" alt="Profile Image" class="rounded-circle mb-3 border border-white border-3" 
+                style="width: 120px; height: 120px; object-fit: cover;">
+            <button (click)="openImageUpload()" class="btn btn-light btn-sm rounded-circle position-absolute bottom-0 end-0"
+                    style="width: 32px; height: 32px;">
+              <i class="bx bx-camera"></i>
+            </button>
+            <input type="file" #fileInput style="display: none;" accept="image/*" (change)="onFileSelected($event)">
+          </div>
+          <h4 class="mb-1">{{currentUser.firstName}} {{currentUser.lastName}}</h4>
+          <p class="mb-0 small">{{currentUser.email}}</p>
+        </div>
+        
+        <!-- Profile Stats -->
+        <div class="card-body">
+          <div class="mb-4">
+            <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2" 
+                   (click)="openProfileModal()">
+              <i class="bx bx-edit"></i> Edit Profile
+            </button>
+          </div>
+          
+          <h6 class="text-uppercase text-muted small fw-bold mb-3">Profile Information</h6>
+          <ul class="list-group list-group-flush">
+            <li *ngFor="let stat of profileStats" class="list-group-item px-0 py-3 d-flex align-items-center border-0 border-bottom">
+              <div class="me-3 rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                  style="width: 40px; height: 40px;">
+                <i [class]="stat.icon" class="text-primary"></i>
+              </div>
+              <div>
+                <div class="small text-muted">{{stat.label}}</div>
+                <div class="fw-semibold">{{stat.value}}</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card-footer bg-light py-3">
+          <div class="d-flex justify-content-around">
+            <button class="btn btn-link text-decoration-none text-danger" (click)="logout()">
+              <i class="bx bx-log-out"></i> Logout
+            </button>
+            <a [routerLink]="['/auth/password']" class="btn btn-link text-decoration-none text-dark">
+              <i class="bx bx-lock-alt"></i> Change Password
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Content Section -->
+    <div class="col-lg-8" [@slideUp]="'in'">
+      <!-- Navigation Tabs -->
+      <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body">
+          <ul class="nav nav-pills nav-fill">
+            <li class="nav-item">
+              <button class="nav-link" [class.active]="activeTab === 'info'" (click)="setActiveTab('info')">
+                <i class="bx bx-user me-1"></i> Profile Info
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" [class.active]="activeTab === 'trips'" (click)="setActiveTab('trips')">
+                <i class="bx bx-trip me-1"></i> My Trips
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Profile Information Tab -->
+      <div *ngIf="activeTab === 'info'" [@fadeIn]="'in'">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-header bg-white pt-4 pb-3 border-0">
+            <h5 class="mb-0"><i class="bx bx-user-circle me-2 text-primary"></i> About Me</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted">First Name</label>
+                <div class="fw-semibold">{{currentUser.firstName}}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted">Last Name</label>
+                <div class="fw-semibold">{{currentUser.lastName}}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted">Email</label>
+                <div class="fw-semibold">{{currentUser.email}}</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small text-muted">Origin Country</label>
+                <div class="fw-semibold">{{currentUser.originCountry || 'Not specified'}}</div>
+              </div>
+              <div class="col-12 mb-3">
+                <label class="form-label small text-muted">Spoken Languages</label>
+                <div class="fw-semibold">{{currentUser.spokenLanguage || 'Not specified'}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Interests Card -->
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-header bg-white pt-4 pb-3 border-0">
+            <h5 class="mb-0"><i class="bx bx-bookmark-heart me-2 text-primary"></i> My Interests</h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="interestsList.length > 0" class="d-flex flex-wrap gap-2 mb-3">
+              <span *ngFor="let interest of interestsList" 
+                    class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill d-flex align-items-center">
+                {{interest}}
+                <i class="bx bx-x ms-1 cursor-pointer" 
+                  (click)="removeInterest(interest)" 
+                  style="cursor: pointer; font-size: 16px;"></i>
+              </span>
+            </div>
+            <div *ngIf="interestsList.length === 0" class="text-muted mb-3">
+              No interests specified yet. Add some interests below.
+            </div>
+
+            <!-- Add Interest -->
+            <div class="input-group mt-2" style="max-width: 300px;">
+              <input type="text" class="form-control form-control-sm" 
+                  placeholder="Add interest..." 
+                  [(ngModel)]="newInterest"
+                  [disabled]="isUpdating"
+                  (keyup.enter)="addInterest()">
+              <button class="btn btn-primary btn-sm" 
+                      (click)="addInterest()"
+                      [disabled]="!newInterest.trim() || isUpdating">
+                  <span *ngIf="!isUpdating"><i class="bx bx-plus"></i></span>
+                  <span *ngIf="isUpdating" class="spinner-border spinner-border-sm"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Travel Preferences Card -->
+        <div class="card border-0 shadow-sm rounded-4 mt-4">
+          <div class="card-header bg-white pt-4 pb-3 border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bx bx-globe-alt me-2 text-primary"></i> Travel Preferences</h5>
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                    (click)="openPreferencesModal()">
+              <i class="bx" [class.bx-edit]="userPreferences" [class.bx-plus]="!userPreferences"></i> 
+              {{ getPreferencesButtonText() }}
+            </button>
+          </div>
+          <div class="card-body">
+            <!-- Loading state -->
+            <div *ngIf="isLoadingPreferences" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="!isLoadingPreferences && !userPreferences" class="text-center py-4">
+              <i class="bx bx-info-circle fs-1 mb-2 text-muted"></i>
+              <p class="text-muted">No travel preferences set yet. Click "Set Travel Preferences" to get started.</p>
+            </div>
+
+            <!-- User Preferences Section -->
+            <div *ngIf="!isLoadingPreferences && userPreferences" class="py-2">
+              <!-- Budget Range -->
+              <div class="mb-3">
+                <p><strong>Budget Range:</strong> 
+                  <span [ngClass]="getBudgetRangeClass()">
+                    {{userPreferences.budgetRange || 'Not specified'}}
+                  </span>
+                </p>
+              </div>
+              
+              <!-- Preference Categories -->
+              <div class="mb-3" *ngIf="getPreferenceList('preferenceCategories').length > 0">
+                <p><strong>Favorite Categories:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill" 
+                        *ngFor="let category of getPreferenceList('preferenceCategories')">
+                    {{category}}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Travel Styles -->
+              <div class="mb-3" *ngIf="getPreferenceList('travelStyles').length > 0">
+                <p><strong>Travel Styles:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill" 
+                        *ngFor="let style of getPreferenceList('travelStyles')">
+                    {{style}}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Language Preferences -->
+              <div class="mb-3" *ngIf="getPreferenceList('languagePreferences').length > 0">
+                <p><strong>Language Preferences:</strong></p>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill" 
+                        *ngFor="let lang of getPreferenceList('languagePreferences')">
+                    {{lang}}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- My Trips Tab -->
+      <div *ngIf="activeTab === 'trips'" [@fadeIn]="'in'">
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white pt-4 pb-3 border-0">
+      <h5 class="mb-0"><i class="bx bx-trip me-2 text-primary"></i> My Trips</h5>
+    </div>
+    <div class="card-body">
+      
+      <div *ngIf="loadingTrips" class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Loading your trips...</p>
+      </div>
+      
+      <div *ngIf="!loadingTrips && pastItineraries.length === 0 && currentItineraries.length === 0 && upcomingItineraries.length === 0" 
+           class="text-center py-4">
+        <div class="mb-3">
+          <i class="bx bx-map text-muted" style="font-size: 3rem;"></i>
+        </div>
+        <h6 class="text-muted">You don't have any booked trips yet</h6>
+        <p class="text-muted small">Explore our itineraries and book your next adventure!</p>
+        <a routerLink="/itineraries" class="btn btn-outline-primary">Discover Itineraries</a>
+      </div>
+      
+      <!-- Current Trips Section -->
+      <div *ngIf="currentItineraries.length > 0" class="mb-4">
+        <h6 class="mb-3">Current Trips</h6>
+        <p class="text-muted small mb-3">Trips you're currently on</p>
+        
+        <div class="row g-3">
+          <div *ngFor="let itinerary of currentItineraries" class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm hover-elevation">
+              <div class="card-body p-0">
+                <div class="position-relative">
+                  <!-- Different background for current trips -->
+                  <div class="trip-visual-header position-relative" 
+                      [style.background]="'linear-gradient(45deg, #4caf50, #8bc34a)'">
+                    <div class="itinerary-stops-icons">
+                      <ng-container *ngFor="let stop of itineraryStops[itinerary.id] || []; let i = index">
+                        <div class="stop-dot" [style.left]="(i * 30) + 10 + 'px'" *ngIf="i < 3">
+                          <i class="bx bx-map-pin"></i>
+                        </div>
+                      </ng-container>
+                    </div>
+                    <div class="p-3 text-white">
+                      <h5 class="mb-1">{{itinerary.title || 'Heritage Journey'}}</h5>
+                      <p class="mb-0 small">
+                        <i class="bx bx-map-alt me-1"></i>
+                        {{itinerary.locations || (itineraryStops[itinerary.id] ? itineraryStops[itinerary.id].length : 0) + ' stops'}}
+                      </p>
+                      <div class="d-flex align-items-center mt-2">
+                        <i class="bx bx-calendar me-1"></i>
+                        <span class="small">Currently ongoing until {{itinerary.endDate | date:'mediumDate'}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="flex-grow-1">
+                        <button class="btn btn-sm btn-outline-primary" (click)="openItineraryDetails(itinerary)">
+                          <i class="bx bx-info-circle me-1"></i> View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Upcoming Trips Section -->
+      <div *ngIf="upcomingItineraries.length > 0" class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6>Upcoming Trips</h6>
+          <span class="badge bg-primary rounded-pill">{{upcomingItineraries.length}} planned</span>
+        </div>
+        <p class="text-muted small mb-3">Trips you have planned for the future</p>
+        
+        <div class="row g-3">
+          <div *ngFor="let itinerary of upcomingItineraries" class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm hover-elevation"
+            [@cardHover]="hoverStates[itinerary.id] ? 'hovered' : 'normal'"
+           (mouseenter)="hoverStates[itinerary.id] = true"
+           (mouseleave)="hoverStates[itinerary.id] = false">
+              <div class="card-body p-0">
+                <div class="position-relative">
+                  <!-- Header with gradient background -->
+                  <div class="trip-visual-header position-relative" 
+                      [style.background]="'linear-gradient(45deg, #2196f3, #00bcd4)'">
+                    <!-- Visual representation of stops -->
+                    <div class="itinerary-stops-icons">
+                      <ng-container *ngFor="let stop of itineraryStops[itinerary.id] || []; let i = index">
+                        <div class="stop-dot" [style.left]="(i * 30) + 10 + 'px'" *ngIf="i < 3">
+                          <i class="bx bx-map-pin"></i>
+                        </div>
+                      </ng-container>
+                    </div>
+                    <div class="p-3 text-white">
+                      <h5 class="mb-1">{{itinerary.title || 'Heritage Journey'}}</h5>
+                      <p class="mb-0 small">
+                        <i class="bx bx-map-alt me-1"></i>
+                        {{itinerary.locations || (itineraryStops[itinerary.id] ? itineraryStops[itinerary.id].length : 0) + ' stops'}}
+                      </p>
+                      <div class="d-flex align-items-center mt-2">
+                        <i class="bx bx-calendar me-1"></i>
+                        <span class="small">Starts on {{itinerary.startDate | date:'mediumDate'}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Card content -->
+                  <div class="p-3">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="flex-grow-1">
+                        <!-- Days until trip starts -->
+                        <div class="d-flex align-items-center small text-muted mb-1">
+                          <i class="bx bx-time me-1 text-info"></i>
+                          <span>
+                            Starts in {{getDaysUntilTrip(itinerary.startDate)}} day{{getDaysUntilTrip(itinerary.startDate) !== 1 ? 's' : ''}}
+                          </span>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div class="d-flex">
+                          <button class="btn btn-sm btn-outline-primary" 
+                                  (click)="openItineraryDetails(itinerary)">
+                            <i class="bx bx-info-circle me-1"></i> Details
+                          </button>
+                          
+                          <button class="btn btn-sm btn-outline-danger ms-2" 
+                                  (click)="cancelTrip(itinerary.id)">
+                            <i class="bx bx-x me-1"></i> Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Past Trips -->
+      <div *ngIf="pastItineraries.length > 0">
+        <h6 class="mb-3">Past Trips</h6>
+        <p class="text-muted small mb-3">Trips you've completed</p>
+        
+        <div class="row g-3">
+          <div *ngFor="let itinerary of pastItineraries" class="col-md-6">
+            <!-- Your trip card template here -->
+            <div class="card h-100 border-0 shadow-sm hover-elevation">
+              <div class="card-body p-0">
+                <div class="position-relative">
+                  <!-- Different background for past trips -->
+                  <div class="trip-visual-header position-relative" 
+                       [style.background]="'linear-gradient(45deg, #9e9e9e, #607d8b)'">
+                    <div class="itinerary-stops-icons">
+                      <ng-container *ngFor="let stop of itineraryStops[itinerary.id] || []; let i = index">
+                        <div class="stop-dot" [style.left]="(i * 30) + 10 + 'px'" *ngIf="i < 3">
+                          <i class="bx bx-map-pin"></i>
+                        </div>
+                      </ng-container>
+                    </div>
+                    <div class="p-3 text-white">
+                      <h5 class="mb-1">{{itinerary.title || 'Heritage Journey'}}</h5>
+                      <p class="mb-0 small">
+                        <i class="bx bx-map-alt me-1"></i>
+                        {{itinerary.locations || (itineraryStops[itinerary.id] ? itineraryStops[itinerary.id].length : 0) + ' stops'}}
+                      </p>
+                      <div class="d-flex align-items-center mt-2">
+                        <i class="bx bx-calendar me-1"></i>
+                        <span class="small">Completed on {{itinerary.endDate | date:'mediumDate'}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="p-3">
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="flex-grow-1">
+                        <div class="d-flex align-items-center small text-muted mb-1">
+                          <i class="bx bx-check-circle me-1 text-success"></i>
+                          <span>Completed trip</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" (click)="openItineraryDetails(itinerary)">
+                          <i class="bx bx-info-circle me-1"></i> View Details
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" (click)="writeReview(itinerary)">
+                          <i class="bx bx-edit me-1"></i> Write Review
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!isLoading && !currentUser" class="text-center py-5">
+    <div class="mb-4">
+      <i class="bx bx-error-circle text-danger" style="font-size: 4rem;"></i>
+    </div>
+    <h4 class="mb-2">Oops! Something went wrong</h4>
+    <p class="text-muted mb-4">We couldn't load your profile information. Please try again later.</p>
+    <div class="d-flex justify-content-center gap-2">
+      <button (click)="loadUserData()" class="btn btn-primary">Retry</button>
+      <a routerLink="/" class="btn btn-outline-secondary">Go to Home</a>
+    </div>
+  </div>
+</div>
+
+<!-- Travel Preferences Modal -->
+<div class="modal fade" id="editPreferencesModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animate__animated animate__fadeIn">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ userPreferences ? 'Edit' : 'Create' }} Travel Preferences</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="preferencesForm">
+          <!-- Budget Range -->
+          <div class="mb-3">
+            <label class="form-label">Budget Range *</label>
+            <select class="form-select" formControlName="budgetRange">
+              <option value="">Select budget range</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <div *ngIf="preferencesForm.get('budgetRange')?.invalid && 
+                        (preferencesForm.get('budgetRange')?.dirty || preferencesForm.get('budgetRange')?.touched)"
+                 class="text-danger mt-1 small">
+              Budget range is required
+            </div>
+          </div>
+          
+          <!-- Preference Categories -->
+          <div class="mb-3">
+            <label class="form-label">Favorite Categories (comma separated) *</label>
+            <textarea class="form-control" rows="2" 
+                      formControlName="preferenceCategories"
+                      placeholder="e.g., Archaeology, Cinema, Music"></textarea>
+            <div *ngIf="preferencesForm.get('preferenceCategories')?.invalid && 
+                        (preferencesForm.get('preferenceCategories')?.dirty || preferencesForm.get('preferenceCategories')?.touched)"
+                 class="text-danger mt-1 small">
+              Categories are required
+            </div>
+          </div>
+          
+          <!-- Travel Styles -->
+          <div class="mb-3">
+            <label class="form-label">Travel Styles (comma separated) *</label>
+            <textarea class="form-control" rows="2" 
+                      formControlName="travelStyles"
+                      placeholder="e.g., Guided Tours, Backpacking, Luxury"></textarea>
+            <div *ngIf="preferencesForm.get('travelStyles')?.invalid && 
+                        (preferencesForm.get('travelStyles')?.dirty || preferencesForm.get('travelStyles')?.touched)"
+                 class="text-danger mt-1 small">
+              Travel styles are required
+            </div>
+          </div>
+          
+          <!-- Language Preferences -->
+          <div class="mb-3">
+            <label class="form-label">Language Preferences (comma separated) *</label>
+            <textarea class="form-control" rows="2" 
+                      formControlName="languagePreferences"
+                      placeholder="e.g., Arabic, French, English"></textarea>
+            <div *ngIf="preferencesForm.get('languagePreferences')?.invalid && 
+                        (preferencesForm.get('languagePreferences')?.dirty || preferencesForm.get('languagePreferences')?.touched)"
+                 class="text-danger mt-1 small">
+              Language preferences are required
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" 
+                (click)="savePreferences()"
+                [disabled]="isSavingPreferences || preferencesForm.invalid">
+          <span *ngIf="!isSavingPreferences">{{ userPreferences ? 'Save Changes' : 'Create Preferences' }}</span>
+          <span *ngIf="isSavingPreferences">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            {{ userPreferences ? 'Saving...' : 'Creating...' }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content animate__animated animate__fadeIn">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Your Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="profileForm">
+          <div class="row">
+            <!-- Profile Image Section -->
+            <div class="col-md-12 mb-4 text-center">
+              <div class="position-relative d-inline-block">
+                <img [src]="getProfileImage()" alt="Profile Image" 
+                     class="rounded-circle mb-3" 
+                     style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #f8f9fa;">
+                <button class="btn btn-sm btn-primary rounded-circle position-absolute bottom-0 end-0" 
+                        style="width: 36px; height: 36px;"
+                        (click)="openImageUpload()">
+                  <i class="bx bx-camera"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Personal Information -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">First Name *</label>
+              <input type="text" class="form-control" formControlName="firstName">
+              <div *ngIf="profileForm.get('firstName')?.invalid && 
+                         (profileForm.get('firstName')?.dirty || profileForm.get('firstName')?.touched)"
+                   class="text-danger small mt-1">
+                First name is required
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Last Name *</label>
+              <input type="text" class="form-control" formControlName="lastName">
+              <div *ngIf="profileForm.get('lastName')?.invalid && 
+                         (profileForm.get('lastName')?.dirty || profileForm.get('lastName')?.touched)"
+                   class="text-danger small mt-1">
+                Last name is required
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-control" formControlName="email" [disabled]="true">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Origin Country</label>
+              <input type="text" class="form-control" formControlName="originCountry">
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Spoken Languages (comma separated)</label>
+              <textarea class="form-control" rows="2" 
+                        formControlName="spokenLanguage"
+                        placeholder="e.g., Arabic, French, English"></textarea>
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Interests (comma separated)</label>
+              <textarea class="form-control" rows="2" 
+                        formControlName="interests"
+                        placeholder="e.g., History, Arts, Music"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" 
+                (click)="saveProfile()"
+                [disabled]="isSavingProfile || profileForm.invalid">
+          <span *ngIf="!isSavingProfile">Save Changes</span>
+          <span *ngIf="isSavingProfile">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Saving...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Book Itinerary Modal -->
+<div class="modal fade" id="bookItineraryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content animate__animated animate__fadeIn">
+      <div class="modal-header">
+        <h5 class="modal-title">Book Your Trip</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedItinerary" class="mb-4">
+          <div class="d-flex align-items-center mb-3">
+            <img [src]="selectedItinerary.imageUrl || 'assets/images/default-site.jpg'" alt="Itinerary" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+            <div>
+              <h6 class="mb-1">{{selectedItinerary.title || 'Heritage Site'}}</h6>
+              <p class="small text-muted mb-0"><i class="bx bx-map-pin me-1"></i> {{selectedItinerary.locations || 'Unknown location'}}</p>
+            </div>
+          </div>
+          
+          <div class="alert alert-info mb-3">
+            <i class="bx bx-info-circle me-2"></i> 
+            This will assign this itinerary to your account. You can always cancel it later if needed.
+          </div>
+          
+          <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="bookItinerary()">Book Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Itinerary Details Modal -->
+<div class="modal fade" id="itineraryDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content animate__animated animate__fadeIn">
+      <div class="modal-header">
+        <h5 class="modal-title">Itinerary Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedItinerary" class="mb-4">
+          <!-- Itinerary header -->
+          <div class="itinerary-header p-3 rounded mb-4 text-white"
+               [style.background]="'linear-gradient(45deg, #3f51b5, #2196f3)'">
+            <h4 class="mb-1">{{selectedItinerary.title || 'Heritage Journey'}}</h4>
+            <div class="d-flex flex-wrap">
+              <div class="me-4 mb-2">
+                <i class="bx bx-calendar me-1"></i>
+                <span>{{selectedItinerary.startDate | date}} - {{selectedItinerary.endDate | date}}</span>
+              </div>
+              <div class="me-4 mb-2">
+                <i class="bx bx-money me-1"></i>
+                <span>Budget: {{selectedItinerary.budget | currency}}</span>
+              </div>
+              <div *ngIf="selectedItinerary.locations" class="mb-2">
+                <i class="bx bx-map me-1"></i>
+                <span>{{selectedItinerary.locations}}</span>
+              </div>
+            </div>
+            <p *ngIf="selectedItinerary.description" class="mb-0 mt-2">
+              {{selectedItinerary.description}}
+            </p>
+          </div>
+          
+          <!-- Itinerary stops -->
+          <h6 class="mb-3">Stops <span class="badge bg-primary ms-2">{{selectedItineraryStops.length}}</span></h6>
+          
+          <div *ngIf="selectedItineraryStops.length === 0" class="text-center py-3">
+            <p class="text-muted">No stops available for this itinerary.</p>
+          </div>
+          
+          <div *ngIf="selectedItineraryStops.length > 0" class="itinerary-timeline">
+            <div *ngFor="let stop of selectedItineraryStops; let i = index" class="timeline-item">
+              <div class="timeline-number">{{stop.order || i+1}}</div>
+              <div class="timeline-content card">
+                <div class="card-body">
+                  <h6 class="mb-1">{{stop.heritageSite?.name || 'Heritage Site'}}</h6>
+                  <p *ngIf="stop.heritageSite && stop.heritageSite.description" class="small text-muted mb-2">
+                    {{stop.heritageSite.description.substring(0, 150)}}{{stop.heritageSite.description.length > 150 ? '...' : ''}}
+                  </p>
+                  <div class="d-flex align-items-center small text-muted">
+                    <div *ngIf="stop.duration" class="me-3">
+                      <i class="bx bx-time me-1"></i>
+                      <span>Duration: {{stop.duration}}</span>
+                    </div>
+                    <div *ngIf="stop.heritageSite && stop.heritageSite.location" class="me-3">
+                      <i class="bx bx-map-pin me-1"></i>
+                      <span>{{stop.heritageSite.location}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button *ngIf="selectedItinerary && !isItineraryBooked(selectedItinerary.id)" 
+                type="button" class="btn btn-primary" (click)="bookItinerary()">
+          Book Now
+        </button>
+        <button *ngIf="selectedItinerary && isItineraryBooked(selectedItinerary.id)" 
+                type="button" class="btn btn-success" disabled>
+          <i class="bx bx-check me-1"></i> Already Booked
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Review Modal -->
+<div class="modal fade" id="addReviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content animate__animated animate__fadeIn">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Review</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedReviewSite" class="mb-4">
+          <div class="d-flex align-items-center mb-3">
+            <img [src]="getHeritageSiteImage(selectedReviewSite.imageIds)" alt="Heritage Site" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+            <div>
+              <h6 class="mb-1">{{selectedReviewSite.name}}</h6>
+              <p class="small text-muted mb-0"><i class="bx bx-map-pin me-1"></i> {{selectedReviewSite.location}}</p>
+            </div>
+          </div>
+          
+          <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+            <div class="mb-3">
+              <label class="form-label">Your Rating</label>
+              <div class="rating-selector">
+                <div class="d-flex">
+                  <div class="star-rating">
+                    <ng-container *ngFor="let star of [5,4,3,2,1]">
+                      <input type="radio" [id]="'star'+star" [value]="star" formControlName="rating" />
+                      <label [for]="'star'+star" [title]="star + ' stars'">
+                        <i class="bx bxs-star"></i>
+                      </label>
+                    </ng-container>
+                  </div>
+                </div>
+                <small class="text-muted mt-1 d-block">Selected: {{reviewForm.get('rating')?.value}} star(s)</small>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="reviewContent" class="form-label">Your Review</label>
+              <textarea 
+                id="reviewContent" 
+                formControlName="content"
+                class="form-control" 
+                rows="4" 
+                placeholder="Share your experience visiting this heritage site..."></textarea>
+              <div *ngIf="reviewForm.get('content')?.invalid && reviewForm.get('content')?.touched" class="text-danger small mt-1">
+                <div *ngIf="reviewForm.get('content')?.errors?.['required']">Review content is required</div>
+                <div *ngIf="reviewForm.get('content')?.errors?.['minlength']">Review must be at least 10 characters</div>
+                <div *ngIf="reviewForm.get('content')?.errors?.['maxlength']">Review cannot exceed 500 characters</div>
+              </div>
+              <small class="text-muted mt-1 d-block">Characters: {{reviewForm.get('content')?.value?.length || 0}}/500</small>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" [disabled]="reviewForm.invalid">Submit Review</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

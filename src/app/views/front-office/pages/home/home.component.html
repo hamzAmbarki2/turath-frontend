@@ -1,0 +1,14 @@
+<div class="home-container">
+  <!-- Use our reusable carousel component -->
+  <app-carousel 
+    [slides]="carouselSlides">
+  </app-carousel>
+
+  <!-- Replace Key Features with Recommended Sites -->
+  <div class="container py-5">
+    <app-recommended-sites
+      [title]="'Recommended For You'"
+      [showViewAllLink]="true">
+    </app-recommended-sites>
+  </div>
+</div>
