@@ -93,8 +93,5 @@ CI/CD ready with proper build pipelines
 
 ---
 
-## 🙋‍♂️ Author
 
-**Marwen Feki**  
-[LinkedIn](https://www.linkedin.com/in/marwenfeki26/)
 
